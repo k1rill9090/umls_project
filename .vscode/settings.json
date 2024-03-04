@@ -1,0 +1,11 @@
+{
+    "sqltools.useNodeRuntime": true,
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "SQLite",
+            "name": "UMLS",
+            "database": "${workspaceFolder:umls_project}/database/PubMedArticles-7.db"
+        }
+    ]
+}
