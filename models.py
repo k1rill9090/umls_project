@@ -28,3 +28,12 @@ class ArticleStruct(Base):
     title = Column(name="Title", type_=String)
     article = Column(name="Abstract", type_=String)
     year = Column(name="Year", type_=String)
+
+class StatResult(Base):
+    __tablename__ = "StatResult"
+
+    pr_key = Column(name="PRKey", type_=Integer, primary_key=True)
+    id_term = Column(name="idTerm", type_=Integer)
+    stat_number = Column(name="StatNumber", type_=Integer)
+    term = Column(name="Term", type_=String)
+    year = Column(name="Year", type_=String)

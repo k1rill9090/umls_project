@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import distinct
 import models
 import schemas
-from database import SessionLocal, engine
+from database import SessionLocal_pubmed, SessionLocal_umls, engine_pubmed, engine_umls
 import json
 
 
@@ -27,16 +27,27 @@ def get_terms(db: Session, limit: int, offset: int, id_term: int, id_art: int, t
     result_dto = [schemas.Terms.model_validate(row, from_attributes=True) for row in res]
     return result_dto
 
-def get_articles(db: Session, limit: int, offset: int):
+def get_articles(db: Session, limit: int, offset: int, id: int, title: str, year: str):
     '''запрос к БД в таблицу ArticleStruct, возвращает данные, отобранные по входным параметрам'''
 
+    filters = []
+    if title != None:
+        filters.append(models.ArticleStruct.title.ilike(f'%{title}%'))
+    if id != None:
+        filters.append(models.ArticleStruct.id == id)
+    if year != None:
+        filters.append(models.ArticleStruct.year.ilike(f'%{year}%'))
+
     total_count = db.query(models.ArticleStruct.id).count()
-    res = db.query(models.ArticleStruct.id,models.ArticleStruct.title, models.ArticleStruct.article).limit(limit).offset(offset).all()
+    res = db.query(
+        models.ArticleStruct.id,models.ArticleStruct.title,
+        models.ArticleStruct.article,
+        models.ArticleStruct.year).filter(and_(True, *filters)).limit(limit).offset(offset).all()
     # преобразование к pydantic-объекту для дальнейшей конвертации в json
     # result_dto = [schemas.ArticleStruct.model_validate(row, from_attributes=True) for row in res]
     arts_ans = {"meta": {"limit": limit, "offset": offset, "total_count": total_count}, "data": []}
     for i in res:
-        arts_ans["data"].append({"id": i[0], "title": i[1], "article": i[2]})
+        arts_ans["data"].append({"id": i[0], "title": i[1], "article": i[2], "year": i[3]})
     return arts_ans
 
 
@@ -91,8 +102,29 @@ def get_synonyms(db: Session, limit: int, offset: int, id: int, record: str, rec
     # ans_json = json.dumps(my_resp)
     return my_resp
 
+
+def get_stat(db: Session, limit: int, offset: int, id_term: int, term: str, year: str):
+    '''запрос к БД в таблицу StatResult, возвращает данные, отобранные по входным параметрам'''
+
+    filters = []
+    if term != None:
+        filters.append(models.StatResult.term.ilike(f'%{term}%'))
+    if id_term != None:
+        filters.append(models.StatResult.id_term == id_term)
+    if year != None:
+        filters.append(models.ArticleStruct.year.ilike(f'%{year}%'))
+
+    total_count = db.query(models.StatResult.id_term).count()
+    res = db.query(
+        models.StatResult.term, models.StatResult.stat_number,
+        models.StatResult.year).filter(and_(True, *filters)).limit(limit).offset(offset).all()
+    arts_ans = {"meta": {"limit": limit, "offset": offset, "total_count": total_count}, "data": []}
+    for i in res:
+        arts_ans["data"].append({"termName": i[0], "numOfAppearance": i[1], "year": i[2]})
+    return arts_ans
+
 # для отладки (код ниже работает при ручном запуске модуля)
 if __name__ == '__main__':
-    with SessionLocal.begin() as session:
+    with SessionLocal_pubmed.begin() as session:
         # print(get_synonyms(session, 10, 0, None, None, None, None, None))
-        print(get_articles(session, 5, 0))
+        print(get_stat(session, 5, 0, None, None, None))
