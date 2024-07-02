@@ -103,7 +103,7 @@ def get_synonyms(db: Session, limit: int, offset: int, id: int, record: str, rec
     return my_resp
 
 
-def get_stat(db: Session, limit: int, offset: int, id_term: int, term: str, year: str):
+def get_stat(db: Session, limit: int, offset: int, id_term: int, term: str, year: int):
     '''запрос к БД в таблицу StatResult, возвращает данные, отобранные по входным параметрам'''
 
     filters = []
@@ -112,7 +112,7 @@ def get_stat(db: Session, limit: int, offset: int, id_term: int, term: str, year
     if id_term != None:
         filters.append(models.StatResult.id_term == id_term)
     if year != None:
-        filters.append(models.ArticleStruct.year.ilike(f'%{year}%'))
+        filters.append(models.StatResult.year == year)
 
     total_count = db.query(models.StatResult.id_term).count()
     res = db.query(
@@ -120,11 +120,13 @@ def get_stat(db: Session, limit: int, offset: int, id_term: int, term: str, year
         models.StatResult.year).filter(and_(True, *filters)).limit(limit).offset(offset).all()
     arts_ans = {"meta": {"limit": limit, "offset": offset, "total_count": total_count}, "data": []}
     for i in res:
+        print(i)
         arts_ans["data"].append({"termName": i[0], "numOfAppearance": i[1], "year": i[2]})
     return arts_ans
+    # return True
 
 # для отладки (код ниже работает при ручном запуске модуля)
 if __name__ == '__main__':
     with SessionLocal_pubmed.begin() as session:
         # print(get_synonyms(session, 10, 0, None, None, None, None, None))
-        print(get_stat(session, 5, 0, None, None, None))
+        print(get_stat(session, 5, None, None, None, '2021'))
