@@ -8,6 +8,7 @@ class Terms(BaseModel):
     id_term: int
     term: str
     id_art: int
+    title_art: str
     year: str
     # class Config:
     #     orm_mode = True

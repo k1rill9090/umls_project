@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -54,11 +54,10 @@ def get_terms(
 
 @app.get("/articles", response_model=schemas.ArticleStruct)
 def get_articles(
-    id: int = None, title: str = None, year: str = None,
+    id: list[int] = Query(default=None), title: str = None, year: str = None,
     limit: int = 5, offset: int = 0,
     db: Session = Depends(get_db_pubmed)
     ):
-
     articles = crud.get_articles(db, limit, offset, id, title, year)
     if articles is None:
         raise HTTPException(status_code=404, detail="Terms not found")

@@ -22,23 +22,30 @@ def get_terms(db: Session, limit: int, offset: int, id_term: int, id_art: int, t
     if year != None:
         filters.append(models.Terms.year == year)
 
-    res = db.query(models.Terms).distinct().filter(and_(True, *filters)).limit(limit).offset(offset).all()
+    res = db.query(models.Terms, models.ArticleStruct.title).join(models.ArticleStruct, models.ArticleStruct.id == models.Terms.id_art).distinct().filter(and_(True, *filters)).limit(limit).offset(offset).all()
     # преобразование к pydantic-объекту для дальнейшей конвертации в json
-    result_dto = [schemas.Terms.model_validate(row, from_attributes=True) for row in res]
-    return result_dto
+    # result_dto = [schemas.Terms.model_validate(row, from_attributes=True) for row in res]
+    # print(result_dto)
+    # for i in res:
+    #     print(i)
+    terms_ans = []
+    for i in res:
+        terms_ans.append({"id_term": i[0].id_term, "term": i[0].term, "id_art": i[0].id_art, "title_art": i[1], "year": i[0].year})
+    return terms_ans
 
 def get_articles(db: Session, limit: int, offset: int, id: int, title: str, year: str):
     '''запрос к БД в таблицу ArticleStruct, возвращает данные, отобранные по входным параметрам'''
-
     filters = []
+    print(id)
     if title != None:
         filters.append(models.ArticleStruct.title.ilike(f'%{title}%'))
     if id != None:
-        filters.append(models.ArticleStruct.id == id)
+        filters.append(models.ArticleStruct.id.in_(id))
     if year != None:
         filters.append(models.ArticleStruct.year.ilike(f'%{year}%'))
 
     total_count = db.query(models.ArticleStruct.id).count()
+
     res = db.query(
         models.ArticleStruct.id,models.ArticleStruct.title,
         models.ArticleStruct.article,
@@ -47,7 +54,8 @@ def get_articles(db: Session, limit: int, offset: int, id: int, title: str, year
     # result_dto = [schemas.ArticleStruct.model_validate(row, from_attributes=True) for row in res]
     arts_ans = {"meta": {"limit": limit, "offset": offset, "total_count": total_count}, "data": []}
     for i in res:
-        arts_ans["data"].append({"id": i[0], "title": i[1], "article": i[2], "year": i[3]})
+        pos = db.query(models.ArticleStruct).filter(models.ArticleStruct.id < i[0]).count()
+        arts_ans["data"].append({"id": i[0], "title": i[1], "article": i[2], "year": i[3], "pos": pos})
     return arts_ans
 
 
@@ -129,4 +137,4 @@ def get_stat(db: Session, limit: int, offset: int, id_term: int, term: str, year
 if __name__ == '__main__':
     with SessionLocal_pubmed.begin() as session:
         # print(get_synonyms(session, 10, 0, None, None, None, None, None))
-        print(get_stat(session, 5, None, None, None, '2021'))
+        print(get_terms(session, 2, None, None, None, None, None))
